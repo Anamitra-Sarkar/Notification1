@@ -1,5 +1,5 @@
 // Backend API URL - Update this for production deployment
-const API_URL = process.env.API_URL || 'https://notification1-30ha.onrender.com';
+const API_URL = 'https://notification1-30ha.onrender.com';
 
 // VAPID Public Key - Replace with your actual public key from backend
 const VAPID_PUBLIC_KEY = 'BOLuHvg6Tm6kwYlmWhPLQebHS5FCVMuu3Dc59cVRa8R4MKNu4nxQeGZpn2pzk4QclNOcrFZ-f0pXpcqPQClDOI8';
