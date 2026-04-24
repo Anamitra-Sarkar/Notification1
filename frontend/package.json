@@ -1,0 +1,22 @@
+{
+  "name": "push-notification-frontend",
+  "version": "1.0.0",
+  "description": "Vanilla JS Web Push Notification Frontend for Vercel",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for vanilla JS'",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "web-push",
+    "notifications",
+    "service-worker",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
