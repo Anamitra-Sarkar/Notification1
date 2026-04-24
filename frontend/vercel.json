@@ -1,5 +1,19 @@
 {
   "buildCommand": null,
   "outputDirectory": ".",
-  "installCommand": null
+  "installCommand": null,
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    }
+  ],
+  "routes": [
+    { "src": "/sw.js", "dest": "/sw.js" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
 }
