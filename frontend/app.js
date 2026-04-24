@@ -1,5 +1,5 @@
 const API_URL = 'https://notification1-30ha.onrender.com';
-const FALLBACK_VAPID_PUBLIC_KEY = 'BOLuHvg6Tm6kwYlmWhPLQebHS5FCVMuu3Dc59cVRa8R4MKNu4nxQeGZpn2pzk4QclNOcrFZ-f0pXpcqPQClDOI8';
+const FALLBACK_VAPID_PUBLIC_KEY = 'BPXjI5L6TwWAzXqMqlz_pxPpFgScBV3BAV5e4hGQAihYLb_NFcArKzzGtAJAuJHDrHNOcdMW8ui72TS_-FL7hpA';
 
 let vapidPublicKey = null;
 let registration = null;
@@ -46,7 +46,6 @@ function checkSupport() {
     return true;
 }
 
-// Utility: convert a Base64URL VAPID public key to Uint8Array for subscribe().
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
@@ -93,7 +92,6 @@ async function getReadyServiceWorkerRegistration() {
         await navigator.serviceWorker.register('/sw.js');
     }
 
-    // Critical: wait for an ACTIVE worker before pushManager.subscribe().
     registration = await navigator.serviceWorker.ready;
     return registration;
 }
@@ -186,9 +184,7 @@ async function unsubscribeFromPush() {
 async function sendSubscriptionToBackend(currentSubscription) {
     const response = await fetch(`${API_URL}/api/subscribe`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentSubscription)
     });
 
@@ -204,9 +200,7 @@ async function removeSubscriptionFromBackend(endpoint) {
     try {
         const response = await fetch(`${API_URL}/api/unsubscribe`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ endpoint })
         });
 
