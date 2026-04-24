@@ -6,6 +6,7 @@ Handles VAPID key generation, subscription management, and push notification del
 import os
 import json
 import sqlite3
+import base64
 from contextlib import contextmanager
 from typing import Optional
 from pathlib import Path
@@ -55,16 +56,18 @@ app = FastAPI(
 )
 
 # CORS Middleware - Allow requests from Vercel frontend
+# NOTE: FastAPI CORSMiddleware does NOT support wildcard subdomains like "https://*.vercel.app"
+# You must list exact origins. Set FRONTEND_URL env var on Render to your Vercel URL.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.frontend_url,
         "http://localhost:3000",
         "http://localhost:8080",
-        "https://*.vercel.app",
+        "https://notification1-inky.vercel.app",
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -320,37 +323,12 @@ async def send_notification(request: SendNotificationRequest):
         "requireInteraction": request.payload.requireInteraction,
     }
     
-    # Send push notification using httpx
     try:
-        # Create WebPush instance with VAPID keys (need PEM format)
-        # Convert our URL-safe base64 keys to the format expected by webpush lib
-        private_key_bytes = base64.urlsafe_b64decode(settings.vapid_private_key + '==')
-        
-        # We need to create PEM format keys for the webpush library
-        # Generate PEM from raw bytes
-        from cryptography.hazmat.primitives.asymmetric import ec
-        from cryptography.hazmat.primitives import serialization
-        from cryptography.hazmat.backends import default_backend
-        
-        # Reconstruct private key from raw bytes
-        private_int = int.from_bytes(private_key_bytes, byteorder='big')
-        private_numbers = ec.EllipticCurvePrivateNumbers(
-            private_int,
-            ec.EllipticCurvePublicNumbers(
-                0, 0, ec.SECP256R1()  # We'll load from public key
-            )
-        )
-        
-        # Actually, let's use a simpler approach - create PEM files in memory
-        import tempfile
-        import os
-        
-        # For now, use raw key approach with manual header construction
         web_push = WebPush(
             private_key=settings.vapid_private_key.encode(),
             public_key=settings.vapid_public_key.encode(),
             subscriber=settings.vapid_contact,
-            ttl=86400,  # 24 hours
+            ttl=86400,
             expiration=86400
         )
         
@@ -483,7 +461,7 @@ async def broadcast_notification(request: BroadcastRequest):
         "sent_count": results["success"],
         "failed_count": results["failed"],
         "total": len(subscriptions),
-        "errors": results["errors"][:10]  # Limit error details
+        "errors": results["errors"][:10]
     }
 
 @app.delete("/api/subscriptions")
@@ -507,11 +485,11 @@ async def startup_event():
     init_database()
     
     if not settings.is_configured:
-        print("\n⚠️  WARNING: VAPID keys not configured!")
+        print("\n\u26a0\ufe0f  WARNING: VAPID keys not configured!")
         print("Run: python generate_vapid_keys.py")
         print("Then set VAPID_PRIVATE_KEY and VAPID_PUBLIC_KEY environment variables\n")
     else:
-        print("\n✅ VAPID keys configured")
+        print("\n\u2705 VAPID keys configured")
         print(f"Public Key: {settings.vapid_public_key[:20]}...\n")
 
 # ============================================================================

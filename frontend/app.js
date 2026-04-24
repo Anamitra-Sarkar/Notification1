@@ -146,7 +146,7 @@ async function subscribeToPush() {
         console.error('Subscription failed:', error);
 
         if (error.name === 'AbortError') {
-            updateStatus('Subscription failed: push service rejected the key. Verify backend VAPID keys match frontend.', 'error');
+            updateStatus('Subscription failed: push service rejected the key. Verify VAPID_PUBLIC_KEY on Render matches the key in app.js.', 'error');
             return;
         }
 
