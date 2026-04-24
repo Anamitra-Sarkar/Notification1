@@ -1,6 +1,7 @@
 const API_URL = 'https://notification1-30ha.onrender.com';
-const VAPID_PUBLIC_KEY = 'BOLuHvg6Tm6kwYlmWhPLQebHS5FCVMuu3Dc59cVRa8R4MKNu4nxQeGZpn2pzk4QclNOcrFZ-f0pXpcqPQClDOI8';
+const FALLBACK_VAPID_PUBLIC_KEY = 'BOLuHvg6Tm6kwYlmWhPLQebHS5FCVMuu3Dc59cVRa8R4MKNu4nxQeGZpn2pzk4QclNOcrFZ-f0pXpcqPQClDOI8';
 
+let vapidPublicKey = null;
 let registration = null;
 let subscription = null;
 
@@ -37,6 +38,11 @@ function checkSupport() {
         return false;
     }
 
+    if (!window.isSecureContext) {
+        updateStatus('Push notifications require HTTPS (or localhost)', 'error');
+        return false;
+    }
+
     return true;
 }
 
@@ -55,6 +61,31 @@ function urlBase64ToUint8Array(base64String) {
     }
 
     return outputArray;
+}
+
+async function getVapidPublicKey() {
+    if (vapidPublicKey) {
+        return vapidPublicKey;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/vapid-keys`);
+        if (!response.ok) {
+            throw new Error(`Backend returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.public_key) {
+            throw new Error('VAPID public key missing in response');
+        }
+
+        vapidPublicKey = data.public_key;
+        return vapidPublicKey;
+    } catch (error) {
+        console.warn('Failed to fetch VAPID key from backend, using fallback key:', error);
+        vapidPublicKey = FALLBACK_VAPID_PUBLIC_KEY;
+        return vapidPublicKey;
+    }
 }
 
 async function getReadyServiceWorkerRegistration() {
@@ -99,10 +130,12 @@ async function subscribeToPush() {
             return;
         }
 
+        const publicKey = await getVapidPublicKey();
+
         updateStatus('Creating push subscription...');
         subscription = await readyRegistration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
         });
 
         await sendSubscriptionToBackend(subscription);
@@ -111,6 +144,12 @@ async function subscribeToPush() {
         updateUI(true);
     } catch (error) {
         console.error('Subscription failed:', error);
+
+        if (error.name === 'AbortError') {
+            updateStatus('Subscription failed: push service rejected the key. Verify backend VAPID keys match frontend.', 'error');
+            return;
+        }
+
         updateStatus(`Subscription failed: ${error.message}`, 'error');
     }
 }
@@ -202,6 +241,7 @@ async function init() {
 
     try {
         await getReadyServiceWorkerRegistration();
+        await getVapidPublicKey();
         subscription = await getSubscription();
 
         if (subscription) {
@@ -219,4 +259,5 @@ async function init() {
 
 subscribeBtn.addEventListener('click', subscribeToPush);
 unsubscribeBtn.addEventListener('click', unsubscribeFromPush);
-document.addEventListener('DOMContentLoaded', init);
+
+init();
